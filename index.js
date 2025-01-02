@@ -121,26 +121,23 @@ class Ball {
   }
 
   collision() {
-    const bll = {
-      posX: this.x + this.radius,
-      posY: this.y + this.radius,
-      negX: this.x - this.radius,
-      negY: this.y - this.radius,
-    };
+    const centerX = this.x;
+    const centerY = this.y;
 
-    if (
-      cursor.sx >= bll.negX &&
-      cursor.ex <= bll.posX &&
-      cursor.sy >= bll.negY &&
-      cursor.ey <= bll.posY
-    ) {
+    const cursorCenterX = (cursor.sx + cursor.ex) / 2;
+    const cursorCenterY = (cursor.sy + cursor.ey) / 2;
+
+    const dx = centerX - cursorCenterX;
+    const dy = centerY - cursorCenterY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= this.radius) {
       const index = balls.indexOf(this);
       if (index !== -1) {
         balls.splice(index, 1);
         popped++;
         h4.innerText = `popped: ${popped}`;
       }
-
       return true;
     }
 
