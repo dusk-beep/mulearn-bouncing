@@ -1,30 +1,79 @@
 const canvas = document.getElementById('my-canvas');
-const width = (canvas.width = window.innerWidth);
-const height = (canvas.height = window.innerHeight);
+const h4 = document.getElementById('popped');
+let width = (canvas.width = window.innerWidth);
+let height = (canvas.height = window.innerHeight);
 
 const ctx = canvas.getContext('2d');
 
 const balls = [];
 
 const cursor = {
-  x: width / 2,
-  y: height / 2,
+  sx: 0,
+  sy: 0,
+  ex: 0,
+  ey: 0,
 };
 
-addEventListener('mousemove', event => {
-  cursor.x = event.clientX;
-  cursor.y = event.clientY;
+let popped = 0;
+const isTouchDevice = 'ontouchstart' in window; // Check if touch events are supported
+
+// Mouse events for desktop
+if (!isTouchDevice) {
+  addEventListener('mousedown', event => {
+    event.preventDefault();
+    cursor.sx = event.clientX;
+    cursor.sy = event.clientY;
+  });
+
+  addEventListener('mousemove', event => {
+    cursor.ex = event.clientX;
+    cursor.ey = event.clientY;
+  });
+
+  addEventListener('mouseup', () => {
+    for (const key in cursor) {
+      cursor[key] = -1;
+    }
+  });
+}
+
+// Touch events for mobile
+if (isTouchDevice) {
+  addEventListener('touchstart', event => {
+    event.preventDefault();
+    cursor.sx = event.touches[0].clientX;
+    cursor.sy = event.touches[0].clientY;
+  });
+
+  addEventListener('touchmove', event => {
+    event.preventDefault();
+    cursor.ex = event.touches[0].clientX;
+    cursor.ey = event.touches[0].clientY;
+    drawLine();
+  });
+
+  addEventListener('touchend', () => {
+    for (const key in cursor) {
+      cursor[key] = -1;
+    }
+  });
+}
+
+addEventListener('resize', () => {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
 });
 
-addEventListener(
-  'touchmove',
-  e => {
-    e.preventDefault();
-    cursor.x = e.touches[0].clientX;
-    cursor.y = e.touches[0].clientY;
-  },
-  { passive: false },
-);
+function drawLine() {
+  ctx.beginPath();
+  ctx.moveTo(cursor.sx, cursor.sy);
+  ctx.lineTo(cursor.ex, cursor.ey);
+  ctx.strokeStyle = 'blue';
+  ctx.lineWidth = 20;
+  ctx.stroke();
+  cursor.sx = cursor.ex;
+  cursor.sy = cursor.ey;
+}
 
 class Ball {
   constructor(x, y, radius, rgb) {
@@ -37,25 +86,21 @@ class Ball {
   }
 
   update() {
-    // Right boundary
     if (this.x + this.radius >= width) {
       this.direction = Math.PI - this.direction;
       this.x = width - this.radius;
     }
 
-    // Left boundary
     if (this.x - this.radius <= 0) {
       this.direction = Math.PI - this.direction;
       this.x = this.radius;
     }
 
-    // Bottom boundary
     if (this.y + this.radius >= height) {
       this.direction = -this.direction;
       this.y = height - this.radius;
     }
 
-    // Top boundary
     if (this.y - this.radius <= 0) {
       this.direction = -this.direction;
       this.y = this.radius;
@@ -75,13 +120,32 @@ class Ball {
     this.update();
   }
 
-  collission() {
-    ctx.beginPath();
-    ctx.moveTo(this.x, this.y);
-    ctx.lineTo(cursor.x, cursor.y);
-    ctx.strokeStyle = 'blue';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  collision() {
+    const bll = {
+      posX: this.x + this.radius,
+      posY: this.y + this.radius,
+      negX: this.x - this.radius,
+      negY: this.y - this.radius,
+    };
+
+    if (
+      cursor.sx >= bll.negX &&
+      cursor.ex <= bll.posX &&
+      cursor.sy >= bll.negY &&
+      cursor.ey <= bll.posY
+    ) {
+      const index = balls.indexOf(this);
+      if (index !== -1) {
+        balls.splice(index, 1);
+        popped++;
+        h4.innerText = `popped: ${popped}`;
+      }
+
+      return true;
+    }
+
+    console.log('No collision.');
+    return false;
   }
 }
 
@@ -119,10 +183,14 @@ function gameLoop() {
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(0, 0, width, height);
 
+  if (balls.length < 15) {
+    getRandomBalls();
+  }
+
   for (const ball of balls) {
     ball.draw();
     ball.animate();
-    ball.collission();
+    ball.collision();
   }
 
   requestAnimationFrame(gameLoop);
