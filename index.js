@@ -6,6 +6,26 @@ const ctx = canvas.getContext('2d');
 
 const balls = [];
 
+const cursor = {
+  x: width / 2,
+  y: height / 2,
+};
+
+addEventListener('mousemove', event => {
+  cursor.x = event.clientX;
+  cursor.y = event.clientY;
+});
+
+addEventListener(
+  'touchmove',
+  e => {
+    e.preventDefault();
+    cursor.x = e.touches[0].clientX;
+    cursor.y = e.touches[0].clientY;
+  },
+  { passive: false },
+);
+
 class Ball {
   constructor(x, y, radius, rgb) {
     this.x = x;
@@ -15,23 +35,6 @@ class Ball {
     this.direction = random(0, 360) * (Math.PI / 180);
     this.speed = random(1, 5);
   }
-
-  // the point of contact move the ball to the direction of the semi
-  // circle that is poibtibg to valid how
-  // update() {
-  //   if (this.x + this.radius >= width) {
-  //     this.direction = random(90, 270) * (Math.PI / 180);
-  //   }
-  //   if (this.y + this.radius >= height) {
-  //     this.direction = random(180, 360) * (Math.PI / 180);
-  //   }
-  //   if (this.x - this.radius <= 0) {
-  //     this.direction = random(90, 270) * (Math.PI / 180);
-  //   }
-  //   if (this.y - this.radius <= 0) {
-  //     this.direction = random(0, 180) * (Math.PI / 180);
-  //   }
-  // }
 
   update() {
     // Right boundary
@@ -72,7 +75,14 @@ class Ball {
     this.update();
   }
 
-  collission() {}
+  collission() {
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(cursor.x, cursor.y);
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
 }
 
 function random(low, upper) {
@@ -112,6 +122,7 @@ function gameLoop() {
   for (const ball of balls) {
     ball.draw();
     ball.animate();
+    ball.collission();
   }
 
   requestAnimationFrame(gameLoop);
